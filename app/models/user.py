@@ -13,6 +13,13 @@ class User(Base):
     auth = Column(SmallInteger, default=1)
     _password = Column('password', String(100))
 
+    @staticmethod
+    def keys():
+        return ['id', 'email', 'nickname', 'auth']
+
+    def __getitem__(self, item):
+        return getattr(self, item)
+
     @property
     def password(self):
         return self._password
@@ -32,12 +39,13 @@ class User(Base):
 
     @staticmethod
     def verify(email, password):
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter_by(email=email).first_or_404()
         if not user:
             raise NotFound(msg='user not found')
         if not user.check_password(password):
             raise AuthFailed()
-        return {'uid': user.id}
+        scope = 'AdminScope' if user.auth == 2 else 'UserScope'
+        return {'uid': user.id, 'scope': scope}
 
     def check_password(self, raw):
         if not self._password:
